@@ -1,0 +1,2 @@
+- [Project handoff restoration](project-handoff.md) — restore preserved source before registering or publishing an artifact after a conversation-to-project move.
+- [Imported pnpm workspaces](imported-pnpm-workspaces.md) — verify the lockfile against every workspace manifest before relying on frozen installs.

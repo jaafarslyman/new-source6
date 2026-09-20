@@ -1,0 +1,436 @@
+Build the new Units page for the existing FlowPoint AI application and make the two requested updates to the existing Properties page.
+
+IMPORTANT:
+
+- Inspect the existing FlowPoint AI design and reuse its existing design system.
+- Do not redesign the application.
+- Do not modify unrelated pages.
+- Supabase is already connected to the project.
+- Implement real working Supabase CRUD operations.
+- Do not use mock data or localStorage as the database.
+
+PART 1 — UNITS PAGE
+
+Add a new Units page to the existing navigation.
+
+The Units page manages the individual units inside the properties managed by the company.
+
+A Unit belongs to exactly one Property.
+
+The database relationship must be:
+
+Property → Units
+
+Each Unit must store the property's UUID as "property_id", NOT the property name.
+
+---
+
+Units Main Page
+
+Create a polished Units management page matching the existing FlowPoint AI design.
+
+Header:
+
+- Title: Units
+- Short description
+- Primary button: Add Unit
+
+Display all units from Supabase.
+
+Each unit should show:
+
+- Unit number
+- Property
+- Unit type
+- Status
+- Current tenant(s), if available
+- Monthly rent
+- Rent due day
+- Lease start
+- Lease end
+- Number of open issues
+
+Do not display fake tenant/issue data if those systems have not been built yet. Use appropriate empty states.
+
+---
+
+Search & Filtering
+
+Add:
+
+- Search by unit number
+- Search by property
+- Search by tenant if tenant data becomes available
+- Filter by property
+- Filter by status
+- Filter by unit type
+
+All menus/dropdowns MUST be custom UI menus matching the FlowPoint design.
+
+DO NOT use the browser/device's native "<select>" menus.
+
+---
+
+ADD UNIT
+
+Create an Add Unit modal/drawer/page using the existing FlowPoint form styling.
+
+Fields:
+
+Basic Information
+
+- Unit number/name
+- Property
+- Unit type
+  - Apartment
+  - House
+  - Condo
+  - Townhouse
+  - Commercial
+  - Other
+- Description
+- Floor
+- Bedrooms
+- Bathrooms
+- Square footage
+
+Rental Information
+
+- Monthly rent
+- Security deposit
+- Rent due day
+- Lease start date
+- Lease end date
+
+Occupancy
+
+- Status:
+  - Occupied
+  - Vacant
+  - Maintenance
+  - Unavailable
+
+For now, do not hardcode tenant selection unless the existing Contacts database already supports it. Contacts will be built separately.
+
+Unit Information
+
+- Amenities
+- Utilities
+- Parking information
+- Access information
+- Rules
+- Notes
+
+---
+
+PROPERTY SELECTION — IMPORTANT
+
+The Property field MUST be populated dynamically from the existing Supabase "properties" table.
+
+When the user clicks the Property field, show a custom FlowPoint dropdown/menu containing the actual properties stored in Supabase.
+
+Example:
+
+Property
+
+[ Select a property ▾ ]
+
+- Sunset Apartments
+  142 Main Street
+
+- Oak Ridge Homes
+  87 Oak Street
+
+- Downtown Plaza
+  21 Main Avenue
+
+DO NOT allow the user to manually type an arbitrary property name.
+
+When a property is selected:
+
+- Store its UUID in "units.property_id"
+- Display the property's name/address in the UI
+- Maintain the relational connection between the Unit and Property
+
+If there are no properties:
+
+Show an appropriate empty state such as:
+
+"No properties available. Add a property first."
+
+---
+
+UNIT DETAILS
+
+Clicking a Unit should open its detailed profile using the FlowPoint design.
+
+Prefer a modal/card if that matches the existing Properties profile behavior.
+
+Show:
+
+Overview
+
+- Unit number
+- Property
+- Address
+- Unit type
+- Status
+- Description
+- Floor
+- Bedrooms
+- Bathrooms
+- Square footage
+
+Rental
+
+- Monthly rent
+- Security deposit
+- Rent due day
+- Lease start
+- Lease end
+
+Future sections
+
+Prepare the UI structure for:
+
+- Tenant(s)
+- Lease
+- Rent
+- Issues
+- Services
+- Communication
+- Documents
+- Notes
+
+Do not build backend functionality for systems that don't exist yet.
+
+---
+
+EDIT UNIT
+
+Every Unit must have an Edit action.
+
+Editing must:
+
+- Load existing data
+- Allow modification
+- Validate the form
+- Save changes to Supabase
+- Update the UI
+- Show success/error states
+
+The Property field must continue to use the actual Properties database.
+
+---
+
+DELETE UNIT
+
+Every Unit must have a Delete action.
+
+Requirements:
+
+- Confirmation dialog
+- Clearly identify the Unit being deleted
+- Delete from Supabase
+- Remove from UI after success
+- Proper error handling
+
+Never silently delete a Unit.
+
+---
+
+SUPABASE
+
+Create real CRUD functionality:
+
+- CREATE
+- READ
+- UPDATE
+- DELETE
+
+Use the existing Supabase client.
+
+Handle:
+
+- Loading states
+- Empty states
+- Errors
+- Success states
+- Validation
+- Database errors
+
+The Units page must persist data in Supabase.
+
+---
+
+DATABASE
+
+Create a "units" table designed to support the future FlowPoint architecture.
+
+Requirements:
+
+- UUID primary key
+- "property_id" UUID foreign key referencing "properties.id"
+- Appropriate fields for all Unit information described above
+- Created/updated timestamps
+- Appropriate constraints
+- Useful indexes
+
+The Property relationship must be a real foreign-key relationship.
+
+Do not duplicate property names/address information inside the Unit as the source of truth.
+
+---
+
+SECURITY / RLS
+
+The Units table must use Row Level Security.
+
+Units must be isolated between different FlowPoint companies/accounts.
+
+Use the existing authentication/company/workspace structure already present in the project.
+
+Users must only be able to:
+
+- Read their company's units
+- Create units belonging to their company
+- Update their company's units
+- Delete their company's units
+
+The foreign-key relationship with Properties must also respect the same company isolation.
+
+Do not invent a completely separate authentication system.
+
+---
+
+PART 2 — MODIFY THE EXISTING PROPERTIES PAGE
+
+Make ONLY these two changes to the existing Properties page.
+
+1. CUSTOM MENUS
+
+Every dropdown/menu/select interaction on the Properties page must use a custom FlowPoint UI menu.
+
+Do NOT use native browser/device "<select>" elements.
+
+This must look identical regardless of whether the user is on:
+
+- Desktop
+- Android
+- iPhone
+- Any browser
+
+The menu should match the existing FlowPoint design language.
+
+---
+
+2. PROPERTY PROFILE AS A POP-UP CARD
+
+Currently, opening a Property should be changed so that the Property profile opens as a large polished pop-up card/modal over the current Properties page, rather than navigating away to a separate page.
+
+The background page should remain visible behind it with an appropriate overlay.
+
+The profile card should contain the existing Property profile information and functionality.
+
+It should include:
+
+- Close button
+- Property information
+- Overview
+- Units section
+- Tenants section placeholder
+- Owners section placeholder
+- Issues section placeholder
+- Staff section placeholder
+- Services section placeholder
+- Documents section placeholder
+- Communication section placeholder
+- Notes
+
+Do not remove existing functionality from the Property profile.
+
+Make the modal responsive and usable on both desktop and mobile.
+
+---
+
+DESIGN REQUIREMENTS
+
+Everything must feel like one coherent FlowPoint AI application.
+
+Reuse:
+
+- Existing typography
+- Existing colors
+- Existing spacing
+- Existing buttons
+- Existing cards
+- Existing borders
+- Existing border radius
+- Existing icons
+- Existing navigation
+- Existing modal patterns
+- Existing responsive behavior
+
+Do not introduce:
+
+- Random colors
+- Unrelated gradients
+- Excessive shadows
+- Glassmorphism
+- A different design system
+- Native browser dropdowns
+
+The final result should look like the Units page was designed at the same time as the existing FlowPoint application.
+
+---
+
+IMPORTANT SCOPE
+
+Build ONLY:
+
+1. Units page
+2. Units Supabase integration
+3. Units CRUD
+4. Property → Unit database relationship
+5. Custom Property selector on the Units page
+6. Custom menus on the Properties page
+7. Property profile as a pop-up card
+
+Do NOT build:
+
+- Contacts
+- Team/Staff
+- Services
+- Requests/Issues
+- AI Agent
+- Inbox
+- n8n workflows
+- Communication channels
+
+Those will be built separately.
+
+---
+
+FINAL REQUIREMENT
+
+After completing the implementation, give me the complete executable SQL query that I can copy directly into Supabase's SQL Editor.
+
+The SQL must create the "units" database table and its complete RLS setup, including:
+
+- UUID primary key
+- "property_id" foreign key
+- All required Unit fields
+- Constraints
+- Timestamps
+- Indexes where useful
+- Row Level Security
+- SELECT policy
+- INSERT policy
+- UPDATE policy
+- DELETE policy
+- Proper company/account-level isolation
+- Proper validation that a Unit can only reference a Property belonging to the same company/account
+
+Do not merely explain the SQL.
+
+Give me the complete SQL query ready to paste into Supabase's SQL Editor.

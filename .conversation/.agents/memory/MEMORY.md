@@ -1,0 +1,2 @@
+- [Private GitHub imports](github-import.md) — use the authenticated GitHub API when direct clone/archive access fails for a private repository.
+- [Project handoff restoration](project-handoff.md) — restore preserved source before registering or publishing an artifact after a conversation-to-project move.

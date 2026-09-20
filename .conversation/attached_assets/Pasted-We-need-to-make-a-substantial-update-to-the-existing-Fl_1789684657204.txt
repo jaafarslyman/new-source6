@@ -1,0 +1,741 @@
+We need to make a substantial update to the existing FlowPoint AI application.
+
+IMPORTANT: Do NOT build the Contacts page from scratch.
+
+First inspect the existing FlowPoint codebase, especially the current Contacts page, its components, types, Supabase queries, routing, navigation, and the existing "contacts" and "staff" database tables.
+
+The old Contacts page currently combines Contacts and Staff into two tabs. We are changing that architecture:
+
+1. Contacts becomes its own full-featured page.
+2. Staff functionality moves into a separate Team / Staff page.
+3. The existing Supabase "contacts" and "staff" tables already exist and must NOT be blindly recreated or deleted.
+4. Preserve existing functionality where it still makes sense.
+5. Give me a complete SQL migration/query at the end for every database change required.
+
+GENERAL DESIGN REQUIREMENTS
+
+Reuse the existing FlowPoint AI design system exactly.
+
+Do not redesign the application.
+
+Use the existing:
+
+- typography
+- colors
+- spacing
+- cards
+- buttons
+- icons
+- modals
+- animations
+- navigation
+- responsive behavior
+- existing UI patterns
+
+Keep the clean premium FlowPoint aesthetic.
+
+Do not introduce gradients, excessive shadows, glassmorphism, random colors, or a completely different visual language.
+
+IMPORTANT:
+All dropdowns/select menus must use custom FlowPoint UI menus. Never use native browser/device "<select>" elements.
+
+==================================================
+PART 1 — CONTACTS PAGE
+
+Turn "/contacts" into a dedicated, much more comprehensive Contacts management page.
+
+Remove the Staff tab completely from this page.
+
+The Contacts page should become the central identity/context page for everyone the property-management company communicates with.
+
+A contact can be:
+
+- Tenant
+- Property Owner
+- Applicant
+- Prospect
+- Vendor
+- Contractor
+- Former Tenant
+- Former Owner
+- Other
+
+Do not assume every contact is a tenant.
+
+---
+
+CONTACT LIST
+
+Keep the existing searchable contact-card/list concept, but make the page substantially wider and more information-dense.
+
+The main Contacts page should have:
+
+Header:
+
+- Contacts
+- Short description explaining that this is where the company manages people and their relationships with properties, units, services, requests and communications.
+- Add Contact button
+
+Search:
+
+- Search by name
+- email
+- phone
+- Customer ID
+- company
+- property
+- unit
+
+Filters using custom dropdown menus:
+
+- Contact type
+- Status
+- Property
+- Unit
+- Service
+- Last communication
+- Has open issues
+
+Do not display database UUIDs.
+
+Each contact should visibly show useful high-level information such as:
+
+- Name
+- Contact type
+- Email
+- Phone
+- Company, if applicable
+- Customer ID
+- Associated property/unit when relevant
+- Services used
+- Open issues count
+- Last communication
+- Status
+
+Do not overcrowd every card. Keep the list visually clean.
+
+---
+
+CONTACT DATA
+
+Expand the existing Contact model/database structure.
+
+Keep the existing fields:
+
+- id
+- created_at
+- name
+- email
+- phone
+- business_name
+- notes
+
+Add the appropriate fields needed for the new system:
+
+- customer_id
+- contact_type
+- status
+- preferred_channel
+- alternate_phone
+- address
+- city
+- state
+- zip_code
+- country
+- company_name if the existing business_name field should be normalized/replaced
+- ai_summary
+- internal_notes
+- last_contacted_at
+- updated_at
+
+Use sensible defaults and nullable fields where information is not always applicable.
+
+Customer ID must be a unique human-readable FlowPoint identifier, separate from the database UUID.
+
+Example format:
+
+FP-10482
+
+Generate it automatically when a contact is created.
+
+Do not expose the database UUID in the UI.
+
+---
+
+CONTACT TYPE
+
+Use a custom dropdown with:
+
+- Tenant
+- Property Owner
+- Applicant
+- Prospect
+- Vendor
+- Contractor
+- Former Tenant
+- Former Owner
+- Other
+
+Allow the user to change the contact type later.
+
+---
+
+CONTACT STATUS
+
+Use a custom dropdown with:
+
+- Active
+- Inactive
+- Archived
+
+Do not delete useful historical contacts just because they are no longer active unless the user explicitly deletes them.
+
+---
+
+PREFERRED COMMUNICATION CHANNEL
+
+Custom dropdown:
+
+- Email
+- Phone
+- SMS
+- WhatsApp
+- Other
+
+This is a preference only.
+
+It does not mean that the channel is currently connected.
+
+---
+
+ADD / EDIT CONTACT
+
+Expand the existing Add/Edit Contact modal.
+
+Organize it into logical sections rather than one huge unstructured form.
+
+SECTION 1 — Identity
+
+- Full name
+- Contact type
+- Status
+- Customer ID (automatically generated and read-only after creation)
+
+SECTION 2 — Contact Information
+
+- Email
+- Phone
+- Alternate phone
+- Preferred communication channel
+
+SECTION 3 — Organization
+
+- Company / organization
+
+SECTION 4 — Address
+
+- Address
+- City
+- State
+- ZIP
+- Country
+
+SECTION 5 — Internal Context
+
+- Internal notes
+- AI summary
+
+Do not require information that may not exist.
+
+Name and at least one reliable communication identifier should be required.
+
+Prefer email when available, but do not make the system fundamentally dependent on email because FlowPoint will eventually support multiple communication channels.
+
+---
+
+CONTACT PROFILE
+
+Clicking a contact should open a large polished profile modal/card over the current page, similar to the Properties profile behavior.
+
+Do NOT navigate away from the Contacts page.
+
+The profile should contain clear sections/tabs:
+
+Overview
+Relationships
+Services
+Issues
+Communication
+Notes
+
+Overview should show:
+
+- Name
+- Contact type
+- Status
+- Customer ID
+- Email
+- Phone
+- Preferred channel
+- Company
+- Address
+- AI summary
+- Internal notes
+
+Do not show database IDs.
+
+---
+
+RELATIONSHIPS
+
+Contacts need to be associated with the property-management company's actual properties and units.
+
+A contact can be associated with:
+
+- one property
+- multiple properties
+- one unit
+- multiple units
+
+Do NOT store property names or unit names as arbitrary text.
+
+Use relational database records.
+
+Property and Unit selectors must be custom dropdowns populated dynamically from the existing Supabase "properties" and "units" tables.
+
+Store their UUIDs internally.
+
+The UI should show the human-readable property/unit name.
+
+A contact may have different relationships with different properties/units.
+
+For example:
+
+John Smith
+Tenant
+123 Main Street
+Unit 204
+
+Another contact may be:
+
+Sarah Jones
+Owner
+123 Main Street
+Unit 101
+Unit 102
+Unit 103
+
+Do not assume that being associated with a property automatically means the person is a tenant.
+
+Create an appropriate relationship table rather than putting a single "property_id" or "unit_id" directly onto the contact if that would prevent multiple relationships.
+
+The relationship should support a relationship type such as:
+
+- Tenant
+- Owner
+- Applicant
+- Vendor
+- Contractor
+- Other
+
+Also support optional:
+
+- start date
+- end date
+- notes
+
+This gives us a proper foundation for leases/tenancies and ownership relationships later.
+
+---
+
+SERVICES
+
+The Contacts profile needs a Services section showing services associated with that contact.
+
+Examples could include:
+
+- Property Management
+- Leasing
+- Maintenance
+- Tenant Placement
+- Inspection
+- Property Marketing
+- Other
+
+IMPORTANT:
+
+Do not hard-code these services into the Contacts UI.
+
+The future Services page will be the source of truth.
+
+Design the data model so contacts can have multiple services and services can belong to multiple contacts.
+
+If the existing Services table does not exist yet, do NOT invent a conflicting Services schema.
+
+Instead, structure the Contacts implementation so the relationship can be connected cleanly when the Services page is built.
+
+If you determine that creating the foundational services relationship table now is appropriate, explain that clearly in the SQL output and make it compatible with the future Services table.
+
+---
+
+COMMUNICATION
+
+The existing Contacts page already has conversation history functionality using the contact's email and the Inbox database.
+
+Preserve this functionality.
+
+Expand the architecture so the Contact profile has a Communication section designed for unified communication.
+
+For now, display available email history correctly.
+
+Structure the UI/data model so future communication channels can be attached to the same Customer ID:
+
+- Email
+- Phone
+- SMS
+- WhatsApp
+- Website/Portal
+- Other
+
+Do NOT build the full phone/SMS/WhatsApp integrations yet.
+
+This task is about the Contacts data foundation and UI.
+
+---
+
+ISSUES
+
+The Contact profile should have an Issues section prepared for the future Requests / Issues system.
+
+If the Issues table does not exist yet, do not create a fake implementation.
+
+Instead show an appropriate empty state such as:
+
+"No requests or issues yet"
+
+and structure the component so it can later consume the Requests / Issues data.
+
+Do not build the full Issues system in this task.
+
+---
+
+CONTACT NOTES
+
+Preserve the existing Notes functionality.
+
+Allow internal notes to be edited from the contact profile.
+
+Keep notes private to the business.
+
+---
+
+CONTACT CONVERSATION HISTORY
+
+Preserve the existing behavior where clicking a contact can show their conversation history.
+
+However, improve the implementation so it is conceptually tied to the contact identity rather than permanently relying on name matching.
+
+Email can currently be used as the lookup mechanism for existing inbox data, but structure the code so future messages can be associated with "customer_id".
+
+Do not break the existing email history functionality.
+
+==================================================
+PART 2 — MOVE STAFF TO TEAM / STAFF
+
+Take the existing Staff functionality from the old Contacts page and move it into a dedicated:
+
+"/team"
+
+or "/staff"
+
+page.
+
+Use whichever route naming is most consistent with the existing application, but the sidebar label should be:
+
+Team / Staff
+
+Remove Staff from Contacts completely.
+
+The existing Staff functionality should be preserved:
+
+- Staff list
+- Search
+- Add Staff
+- Edit Staff
+- Delete Staff
+- Notes
+- Name
+- Email
+- Role
+- Role description
+
+Use the existing "staff" Supabase table.
+
+Do not recreate it from scratch.
+
+---
+
+TEAM / STAFF EXPANSION
+
+Make the new Team / Staff page more complete because Staff will eventually be the people FlowPoint contacts internally when the AI needs human assistance.
+
+Staff fields should support:
+
+- Name
+- Email
+- Phone
+- Role
+- Role description
+- Department
+- Status
+- Notes
+- Preferred internal communication channel
+- Responsibilities
+- Properties assigned to them, if applicable
+
+Status:
+
+- Active
+- Inactive
+
+Preferred internal channel:
+
+- Email
+- Phone
+- SMS
+- Slack
+- Other
+
+Responsibilities should allow the company to describe what this person handles.
+
+This is important because the AI will eventually use staff information to determine who should handle an issue.
+
+For example:
+
+Maintenance Manager
+Handles maintenance requests, emergency repairs and contractor coordination.
+
+Property Manager
+Handles tenants, owners, leases and property operations.
+
+Do not build the AI routing system yet.
+
+Only create the data foundation and UI.
+
+---
+
+STAFF PROFILE
+
+Clicking a staff member should open a polished profile modal/card.
+
+Sections:
+
+Overview
+Responsibilities
+Properties
+Communication
+Notes
+
+Show:
+
+- Name
+- Role
+- Role description
+- Department
+- Email
+- Phone
+- Preferred channel
+- Status
+- Responsibilities
+- Notes
+
+Again, do not show database UUIDs.
+
+---
+
+STAFF / PROPERTY RELATIONSHIP
+
+If appropriate, allow staff members to be associated with properties.
+
+A staff member can manage multiple properties.
+
+A property can have multiple staff members.
+
+Do not put only one "property_id" on the staff table if this would prevent many-to-many relationships.
+
+Use a proper relationship table if necessary.
+
+==================================================
+PART 3 — NAVIGATION
+
+Update the sidebar/navigation.
+
+Current Contacts navigation should remain:
+
+Contacts
+
+Add:
+
+Team / Staff
+
+Remove any Staff tab from inside Contacts.
+
+Make sure routing works correctly.
+
+Do not break existing Dashboard, Inbox, Properties, Units, Business Policies or Agent pages.
+
+==================================================
+PART 4 — DATABASE REQUIREMENTS
+
+IMPORTANT:
+
+The existing "contacts" and "staff" tables already exist.
+
+Inspect their current schemas before changing anything.
+
+Do not blindly create duplicate tables.
+
+Do not delete existing data.
+
+Create a migration that:
+
+1. Adds the new required columns to "contacts".
+2. Adds the new required columns to "staff" where appropriate.
+3. Creates relationship tables needed for:
+   - contact ↔ property/unit relationships
+   - staff ↔ property relationships
+4. Adds appropriate indexes.
+5. Adds unique constraints where appropriate.
+6. Adds updated_at handling where appropriate.
+7. Adds Row Level Security / company isolation consistent with the existing application's Supabase architecture.
+8. Preserves all existing rows and data.
+
+IMPORTANT:
+
+Inspect the existing company/workspace/user ownership structure before writing RLS.
+
+Do not invent a new multi-tenant architecture if the application already has one.
+
+Follow the existing project's authentication and company/workspace structure.
+
+For every relationship table, enforce that users cannot create relationships across different companies/workspaces.
+
+Customer ID must be unique within the appropriate company/workspace scope.
+
+Do not use globally unique Customer IDs if that conflicts with the existing multi-tenant architecture.
+
+==================================================
+PART 5 — EXISTING FUNCTIONALITY THAT MUST NOT BREAK
+
+Preserve:
+
+- Existing Supabase connection
+- Existing contact CRUD
+- Existing staff CRUD
+- Existing contact notes
+- Existing staff notes
+- Existing contact conversation history
+- Existing notification behavior where appropriate
+- Existing authentication
+- Existing responsive behavior
+- Existing FlowPoint visual system
+
+Do not replace working functionality with mock data.
+
+Do not use localStorage as a database.
+
+All persistent data must use Supabase.
+
+==================================================
+PART 6 — IMPORTANT ARCHITECTURE RULE
+
+The Contacts page is becoming one of the most important data foundations of FlowPoint.
+
+Think of the structure as:
+
+Company
+→ Properties
+→ Units
+→ Contacts
+→ Relationships
+→ Services
+→ Issues
+→ Conversations
+
+But do not implement future pages that are not part of this task.
+
+Build the Contacts and Team / Staff data models so the future AI can eventually understand:
+
+Who is this person?
+What type of person are they?
+Which properties are they connected to?
+Which units are they connected to?
+What services do they use?
+What issues do they have?
+What conversations have happened?
+What relevant internal notes/context exist?
+
+The database should support this without relying on duplicated text fields.
+
+==================================================
+PART 7 — CUSTOM UI RULE
+
+Every dropdown, selector, filter menu and contextual menu must be a custom FlowPoint UI component.
+
+NEVER use:
+
+<select>or native browser dropdowns.
+
+This applies to:
+
+- Contact type
+- Contact status
+- Preferred channel
+- Property
+- Unit
+- Relationship type
+- Service
+- Staff status
+- Staff preferred channel
+- Filters
+- Any other menu added during this task
+
+==================================================
+PART 8 — FINAL SQL OUTPUT
+
+After implementing everything, provide me with ONE complete SQL migration/query that I can paste into the Supabase SQL Editor.
+
+The SQL must:
+
+- safely alter the existing "contacts" table
+- safely alter the existing "staff" table
+- create any required relationship tables
+- create indexes
+- create constraints
+- create/update triggers if needed
+- create RLS policies
+- preserve existing data
+- work with the application's existing authentication/company structure
+
+Do not give me pseudocode.
+
+Give me the actual executable SQL.
+
+Before writing the SQL, inspect the existing schema and make sure the migration matches the real columns/types already present.
+
+==================================================
+FINAL REQUIREMENT
+
+At the end, clearly report:
+
+1. Files changed
+2. Routes added/changed
+3. Existing functionality preserved
+4. New Contacts functionality
+5. New Team / Staff functionality
+6. Database changes
+7. Complete SQL migration to run in Supabase
+
+Do not modify unrelated pages or workflows.
+
+Do not touch the n8n workflows in this task.

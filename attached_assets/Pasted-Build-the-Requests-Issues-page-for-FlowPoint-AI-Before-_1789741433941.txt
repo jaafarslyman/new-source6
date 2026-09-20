@@ -1,0 +1,611 @@
+Build the Requests / Issues page for FlowPoint AI.
+
+Before making any changes, inspect the existing project, Supabase schema, authentication/company/workspace architecture, and the already-built Properties, Units, Contacts, Team/Staff, and Services pages.
+
+Reuse the existing FlowPoint design system exactly. Do NOT redesign the application.
+
+1. Page
+
+Create a dedicated "/requests" or "/issues" page and add it to the existing navigation as:
+
+Requests / Issues
+
+This page is the central place for tracking problems, requests, complaints, maintenance issues, and other operational tasks involving contacts, properties, units, and services.
+
+The fundamental relationship should be:
+
+Contact → Property/Unit → Service → Request/Issue → Staff
+
+An issue may also exist without a specific service, property, or unit when appropriate.
+
+---
+
+2. Main List
+
+Create a polished management table/list consistent with the existing pages.
+
+Each request/issue should show:
+
+- Request/Issue title
+- Issue type/category
+- Status
+- Priority
+- Contact/customer
+- Property
+- Unit
+- Related service
+- Assigned staff
+- Created date
+- Last updated
+- Age / time open
+
+Statuses:
+
+- Open
+- In Progress
+- Waiting on Customer
+- Waiting on Staff
+- Resolved
+- Closed
+- Cancelled
+
+Priorities:
+
+- Low
+- Normal
+- High
+- Urgent
+
+Include:
+
+- Search
+- Status filter
+- Priority filter
+- Issue type/category filter
+- Property filter
+- Unit filter
+- Service filter
+- Assigned staff filter
+- Contact filter
+- Date filtering if practical
+
+All dropdowns MUST use FlowPoint's existing custom dropdown components.
+
+Never use native HTML "<select>" elements.
+
+---
+
+3. Issue Types
+
+Support configurable issue/request types rather than hardcoding the entire system.
+
+Provide sensible initial categories such as:
+
+- Maintenance
+- Rent / Payment
+- Lease
+- Move-In
+- Move-Out
+- Property Damage
+- Complaint
+- Service Request
+- Access
+- Utilities
+- Inspection
+- General Inquiry
+- Other
+
+The database should allow the business to add/change categories later if appropriate.
+
+Do not overcomplicate this into a separate category-management system unless the existing architecture already supports one.
+
+---
+
+4. Create / Edit Request
+
+Create a polished modal for creating and editing an issue.
+
+Basic Information
+
+- Title
+- Description
+- Issue type/category
+- Status
+- Priority
+
+Person
+
+- Contact
+- Customer ID displayed when a contact is selected
+
+The contact must be selected from actual Contacts data.
+
+Do NOT allow arbitrary contact names to be stored as plain text when a contact exists.
+
+Location
+
+- Property
+- Unit
+
+Property should come from the existing "properties" table.
+
+Unit should come from the existing "units" table and should dynamically respect the selected property.
+
+Do not store property/unit names as arbitrary text.
+
+Service
+
+- Related service
+
+Populate from the existing Services data.
+
+A request may have no service attached.
+
+Assignment
+
+- Assigned staff member
+
+Populate from the existing Team/Staff data.
+
+Allow an issue to remain unassigned.
+
+Additional Information
+
+- Due date
+- Internal notes
+- Customer-facing notes/information
+- Resolution notes
+
+Do not force fields that aren't applicable.
+
+---
+
+5. Issue Profile
+
+Clicking an issue should open a large polished modal/card over the current page, consistent with the existing Property, Contact, Staff, and Service profile behavior.
+
+Do NOT navigate away.
+
+Organize the profile into sections/tabs:
+
+Overview
+
+Show:
+
+- Title
+- Description
+- Type
+- Status
+- Priority
+- Created date
+- Updated date
+- Age/time open
+
+Contact
+
+Show:
+
+- Contact name
+- Customer ID
+- Contact type
+- Email
+- Phone
+- Link/open their existing contact profile if the current UI architecture supports it
+
+Property / Unit
+
+Show:
+
+- Property
+- Unit
+- Relevant unit information
+
+Service
+
+Show:
+
+- Related service
+- Service information
+
+Assignment
+
+Show:
+
+- Assigned staff
+- Role
+- Relevant responsibility information
+
+Timeline
+
+Create a chronological activity/timeline area.
+
+Initially track events such as:
+
+- Created
+- Status changed
+- Priority changed
+- Assigned/reassigned
+- Notes added
+- Resolved
+- Closed
+
+This timeline should use real database records, not fake activity.
+
+Structure it so future AI/channel events can be added.
+
+Notes / Resolution
+
+Show:
+
+- Internal notes
+- Customer-facing notes
+- Resolution details
+
+---
+
+6. Issue Relationships
+
+Use proper relational database relationships.
+
+An issue should reference:
+
+- Company/workspace
+- Contact
+- Property
+- Unit
+- Service
+- Assigned staff
+
+These should be UUID foreign keys to the existing records.
+
+Do NOT store:
+
+- property names
+- unit names
+- staff names
+- service names
+- contact names
+
+as the primary relationship mechanism.
+
+Use foreign keys.
+
+All relationships must respect the existing company/workspace isolation.
+
+For example, a company must not be able to create an issue belonging to a contact/property/unit/staff member/service from another company.
+
+---
+
+7. Issue Timeline / Activity Database
+
+Create a proper activity table if the existing schema does not already provide one.
+
+For example:
+
+"issue_activity"
+
+It should support:
+
+- id
+- issue_id
+- company/workspace relationship if required by the existing architecture
+- activity type
+- description
+- actor type
+- actor/reference information where appropriate
+- metadata if useful
+- created_at
+
+Possible activity types:
+
+- created
+- status_changed
+- priority_changed
+- assigned
+- reassigned
+- note_added
+- resolved
+- closed
+
+Keep this extensible because later activity can include:
+
+- AI actions
+- emails
+- phone calls
+- SMS
+- staff responses
+- customer responses
+- automated follow-ups
+
+Do not build the channel integration yet.
+
+---
+
+8. Contact Integration
+
+The Contacts page already supports Issues.
+
+Make sure the Contacts profile's Issues section uses the actual Requests/Issues data.
+
+A contact profile should be able to show:
+
+- Open issues
+- Recent issues
+- Status
+- Priority
+- Related property/unit
+- Related service
+
+Do not create a separate issue system inside Contacts.
+
+Requests/Issues must be the single source of truth.
+
+---
+
+9. Property / Unit Integration
+
+The Property and Unit profiles should be able to show relevant requests/issues if their existing architecture supports adding this section without redesigning them.
+
+For a property:
+
+- Open issues
+- Recent issues
+- Priority
+- Assigned staff
+
+For a unit:
+
+- Open issues
+- Recent issues
+- Status
+- Priority
+- Related contact
+
+Preserve the existing profile/modal design.
+
+---
+
+10. Service Integration
+
+The Services page should be able to show requests/issues related to that service.
+
+For example:
+
+Maintenance
+→ 14 open requests
+→ 6 urgent
+→ assigned staff
+
+Use actual relational data.
+
+Do not duplicate issue records.
+
+---
+
+11. Dashboard Compatibility
+
+Do not redesign the Dashboard yet.
+
+However, structure the data so the future Dashboard can calculate:
+
+- Open issues
+- Urgent issues
+- Issues by status
+- Issues by property
+- Issues by service
+- Issues by staff
+- Average resolution time
+- Overdue issues
+
+Do not build dashboard analytics in this task.
+
+---
+
+12. AI Readiness
+
+This page is a major part of the future AI system.
+
+The AI should eventually be able to:
+
+- Create an issue from an email/call/SMS
+- Associate it with the correct Contact
+- Identify the relevant Property
+- Identify the relevant Unit
+- Identify the relevant Service
+- Set priority
+- Assign the appropriate staff member
+- Update status
+- Add timeline events
+- Notify staff
+- Track resolution
+- Follow up with the customer
+- Recognize that a new message belongs to an existing issue
+
+Do NOT build these AI workflows yet.
+
+Only make the data model clean and structured enough to support them later.
+
+---
+
+13. Real Supabase Data
+
+Everything must use the existing Supabase database.
+
+Do NOT use:
+
+- Mock data
+- Hardcoded records
+- localStorage
+- Fake statistics
+- Temporary arrays as the data source
+
+Implement real:
+
+- Create
+- Read
+- Update
+- Delete
+- Search
+- Filtering
+- Assignment
+- Relationship management
+- Timeline/activity creation
+
+Handle:
+
+- Loading states
+- Empty states
+- Errors
+- Successful mutations
+- Confirmation before destructive actions
+
+---
+
+14. Database Schema
+
+First inspect the existing database.
+
+If an equivalent "requests", "issues", or activity table already exists, reuse and extend it instead of creating duplicate tables.
+
+If no suitable table exists, create the necessary tables.
+
+At minimum, the main issue table should support:
+
+- UUID primary key
+- Company/workspace relationship
+- Title
+- Description
+- Issue type/category
+- Status
+- Priority
+- Contact ID
+- Property ID
+- Unit ID
+- Service ID
+- Assigned staff ID
+- Due date
+- Internal notes
+- Customer-facing notes
+- Resolution notes
+- Resolved/closed timestamps where appropriate
+- Created at
+- Updated at
+
+Add appropriate:
+
+- Foreign keys
+- Indexes
+- Constraints
+- Defaults
+- Timestamp handling
+
+Follow the architecture already used by the existing FlowPoint tables.
+
+---
+
+15. RLS / Security
+
+Use the existing FlowPoint multi-tenant architecture.
+
+Every issue and issue activity must be isolated to the correct company/workspace.
+
+RLS must prevent users from:
+
+- Reading another company's issues
+- Creating issues linked to another company's contacts/properties/units/services/staff
+- Updating another company's issues
+- Deleting another company's issues
+- Creating cross-company issue relationships
+
+Do not invent a new authentication or tenancy system.
+
+Inspect and reuse the existing one.
+
+---
+
+16. Supabase SQL Migration — REQUIRED
+
+After implementing the feature, inspect the actual database changes required by the implementation.
+
+Then provide ONE complete executable SQL migration that can be pasted directly into the Supabase SQL Editor.
+
+The SQL must include everything necessary, including:
+
+- New tables
+- Alterations to existing tables
+- Foreign keys
+- Constraints
+- Indexes
+- Defaults
+- "created_at"
+- "updated_at"
+- Timestamp triggers where consistent with the existing architecture
+- Issue activity table
+- RLS enablement
+- RLS policies
+- Company/workspace isolation
+- Any necessary validation preventing cross-company relationships
+
+The migration must be based on the actual existing FlowPoint schema.
+
+Do NOT assume a blank database.
+
+Do NOT drop existing tables.
+
+Do NOT delete existing data.
+
+Do NOT provide pseudocode or partial SQL.
+
+The final response must contain the complete SQL migration, ready to paste into Supabase SQL Editor.
+
+Also briefly explain:
+
+- Which existing tables were reused
+- Which tables were created
+- Which existing tables were modified
+- Any assumptions made about the existing schema
+
+---
+
+17. Scope Protection
+
+Do NOT:
+
+- Modify n8n workflows
+- Build the AI Agent
+- Build communication channels
+- Build the Inbox
+- Redesign existing pages
+- Replace existing Supabase architecture
+- Delete existing data
+- Create duplicate Contacts, Properties, Units, Services, or Staff systems
+
+Only make changes required for Requests / Issues and its integrations.
+
+---
+
+18. Final Verification
+
+Before finishing, verify:
+
+- "/requests" works
+- CRUD works against Supabase
+- Search works
+- Filters work
+- Contact relationships work
+- Property relationships work
+- Unit relationships work
+- Service relationships work
+- Staff assignment works
+- Timeline/activity works
+- Existing Contacts integration works
+- Existing Services integration works
+- Custom dropdowns are used everywhere
+- No native "<select>" elements were introduced
+- No mock/localStorage data is being used
+- Existing pages still work
+- Responsive behavior works
+- RLS is correctly implemented
+- SQL migration matches the actual implementation
+
+Then provide a concise implementation summary and the complete executable Supabase SQL migration.
