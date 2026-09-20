@@ -1,6 +1,7 @@
 export type ContactType =
   | 'tenant'
   | 'property_owner'
+  | 'company'
   | 'applicant'
   | 'prospect'
   | 'vendor'
@@ -100,6 +101,29 @@ export interface ContactPropertyRelationship {
   } | null;
 }
 
+export interface ContactPropertyRelationshipHistory {
+  id: string;
+  company_id: string | null;
+  contact_id: string;
+  property_id: string | null;
+  unit_id: string | null;
+  relationship_type: RelationshipType;
+  start_date: string | null;
+  end_date: string | null;
+  notes: string | null;
+  ownership_percentage: number | null;
+  ownership_scope: string | null;
+  property_name: string | null;
+  property_address_line1: string | null;
+  property_city: string | null;
+  property_state: string | null;
+  property_postal_code: string | null;
+  property_country: string | null;
+  unit_number: string | null;
+  archived_at: string;
+  archive_reason: string | null;
+}
+
 export interface StaffPropertyRelationship {
   id: string | number;
   company_id: string | null;
@@ -117,6 +141,7 @@ export interface StaffPropertyRelationship {
 export const CONTACT_TYPES = [
   { value: 'tenant', label: 'Tenant' },
   { value: 'property_owner', label: 'Property owner' },
+  { value: 'company', label: 'Company' },
   { value: 'applicant', label: 'Applicant' },
   { value: 'prospect', label: 'Prospect' },
   { value: 'vendor', label: 'Vendor' },

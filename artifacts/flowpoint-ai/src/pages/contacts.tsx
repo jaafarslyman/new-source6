@@ -44,6 +44,7 @@ import {
   type Contact,
   type ContactDraft,
   type ContactPropertyRelationship,
+  type ContactPropertyRelationshipHistory,
   type RelationshipType,
 } from '@/lib/contactsTypes';
 import type { Service, ServiceContactRelationship } from '@/lib/servicesTypes';
@@ -258,8 +259,8 @@ function ContactForm({
           <div className="sm:col-span-2">
             <p className="mb-3 border-b border-[#ebe8e3] pb-2 text-[12px] font-semibold text-[#35322e]">Identity</p>
           </div>
-          <Field label="Full name">
-            <input autoFocus className={inputClass} value={form.name} onChange={(event) => set('name', event.target.value)} placeholder="Full name" />
+          <Field label={form.contact_type === 'company' ? 'Company name' : 'Full name'}>
+            <input autoFocus className={inputClass} value={form.name} onChange={(event) => set('name', event.target.value)} placeholder={form.contact_type === 'company' ? 'Company name' : 'Full name'} />
             <FormError message={errors.name} />
           </Field>
           <Field label="Contact type">
@@ -451,6 +452,7 @@ function InlineError({ message }: { message: string }) {
 function RelationshipPanel({
   contact,
   relationships,
+  relationshipHistory,
   properties,
   units,
   onAdd,
@@ -458,6 +460,7 @@ function RelationshipPanel({
 }: {
   contact: Contact;
   relationships: ContactPropertyRelationship[];
+  relationshipHistory: ContactPropertyRelationshipHistory[];
   properties: Property[];
   units: Unit[];
   onAdd: (data: Omit<ContactPropertyRelationship, 'id' | 'company_id' | 'property' | 'unit'>) => Promise<void>;
@@ -466,6 +469,7 @@ function RelationshipPanel({
   const [draft, setDraft] = useState({ property_id: '', unit_id: '', relationship_type: 'tenant' as RelationshipType, start_date: '', end_date: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const linked = relationships.filter((item) => item.contact_id === contact.id);
+  const historical = relationshipHistory.filter((item) => String(item.contact_id) === String(contact.id));
   const propertyUnits = units.filter((unit) => !draft.property_id || unit.property_id === draft.property_id);
   const add = async () => {
     if (!draft.property_id) return;
@@ -490,13 +494,15 @@ function RelationshipPanel({
       </div>
       <button onClick={add} disabled={!draft.property_id || saving} className="mt-3 flex h-9 items-center gap-2 rounded-[9px] bg-[#151412] px-3.5 text-[12px] font-semibold text-white hover:bg-[#312f2c] disabled:opacity-40">{saving ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}Add relationship</button>
     </div>
-    {linked.length === 0 ? <EmptyState icon={Home} title="No property relationships yet" description="Connect this person to the properties and units they work with." /> : <div className="space-y-2">{linked.map((relationship) => { const property = relationship.property ?? properties.find((item) => item.id === relationship.property_id); const unit = relationship.unit ?? units.find((item) => item.id === relationship.unit_id); const ownership = relationship.ownership_percentage !== null && relationship.ownership_percentage !== undefined ? `${relationship.ownership_percentage}% ownership` : relationship.ownership_scope; return <div key={String(relationship.id)} className="flex items-start justify-between gap-3 rounded-[11px] border border-[#e9e6e1] bg-white p-3"><div className="flex min-w-0 gap-3"><div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[9px] bg-[#f1eee9] text-[#706b62]"><Building2 size={15} /></div><div className="min-w-0"><p className="truncate text-[12px] font-semibold text-[#35322e]">{property?.name ?? 'Property unavailable'}</p><p className="mt-1 text-[10px] text-[#8e8981]">{unit ? `Unit ${unit.unit_number} · ` : ''}{relationshipTypeLabel(relationship.relationship_type)}</p>{ownership && <p className="mt-1 text-[10px] font-medium text-[#625e57]">{ownership}</p>}{(relationship.start_date || relationship.end_date) && <p className="mt-1 text-[10px] text-[#aaa59d]">{relationship.start_date ?? 'Open'} → {relationship.end_date ?? 'Current'}</p>}</div></div><button onClick={() => onRemove(relationship)} className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[7px] border border-[#f0c8c3] text-[#a33a30] hover:bg-[#fff7f6]"><Trash2 size={12} /></button></div>; })}</div>}
+    {linked.length === 0 && historical.length === 0 ? <EmptyState icon={Home} title="No property relationships yet" description="Connect this person to the properties and units they work with." /> : <div className="space-y-2">{linked.map((relationship) => { const property = relationship.property ?? properties.find((item) => item.id === relationship.property_id); const unit = relationship.unit ?? units.find((item) => item.id === relationship.unit_id); const ownership = relationship.ownership_percentage !== null && relationship.ownership_percentage !== undefined ? `${relationship.ownership_percentage}% ownership` : relationship.ownership_scope; return <div key={String(relationship.id)} className="flex items-start justify-between gap-3 rounded-[11px] border border-[#e9e6e1] bg-white p-3"><div className="flex min-w-0 gap-3"><div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[9px] bg-[#f1eee9] text-[#706b62]"><Building2 size={15} /></div><div className="min-w-0"><p className="truncate text-[12px] font-semibold text-[#35322e]">{property?.name ?? 'Property unavailable'}</p><p className="mt-1 text-[10px] text-[#8e8981]">{unit ? `Unit ${unit.unit_number} · ` : ''}{relationshipTypeLabel(relationship.relationship_type)}</p>{ownership && <p className="mt-1 text-[10px] font-medium text-[#625e57]">{ownership}</p>}{(relationship.start_date || relationship.end_date) && <p className="mt-1 text-[10px] text-[#aaa59d]">{relationship.start_date ?? 'Open'} → {relationship.end_date ?? 'Current'}</p>}</div></div><button onClick={() => onRemove(relationship)} className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[7px] border border-[#f0c8c3] text-[#a33a30] hover:bg-[#fff7f6]"><Trash2 size={12} /></button></div>; })}</div>}
+    {historical.length > 0 && <section className="mt-4"><p className="mb-2 text-[11px] font-semibold uppercase tracking-[.08em] text-[#9b968d]">Former property history</p><div className="space-y-2">{historical.map((item) => <div key={item.id} className="rounded-[11px] border border-[#eeeae5] bg-[#faf9f7] p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-[12px] font-semibold text-[#625e57]">{item.property_name ?? 'Property unavailable'}</p><p className="mt-1 text-[10px] text-[#8e8981]">{item.unit_number ? `Unit ${item.unit_number} · ` : ''}{relationshipTypeLabel(item.relationship_type)}</p></div><span className="flex-shrink-0 text-[10px] text-[#aaa59d]">{new Date(item.archived_at).toLocaleDateString()}</span></div>{(item.start_date || item.end_date) && <p className="mt-2 text-[10px] text-[#9b968d]">{item.start_date ?? 'Open'} → {item.end_date ?? 'Ended'}</p>}{item.ownership_scope && <p className="mt-1 text-[10px] text-[#77736d]">{item.ownership_scope}</p>}</div>)}</div></section>}
   </div>;
 }
 
 function ContactProfile({
   contact,
   relationships,
+  relationshipHistory,
   properties,
   units,
   serviceRelationships,
@@ -509,6 +515,7 @@ function ContactProfile({
 }: {
   contact: Contact;
   relationships: ContactPropertyRelationship[];
+  relationshipHistory: ContactPropertyRelationshipHistory[];
   properties: Property[];
   units: Unit[];
   serviceRelationships: ServiceContactRelationship[];
@@ -554,7 +561,7 @@ function ContactProfile({
     <div className="flex gap-1 overflow-x-auto border-b border-[#ebe8e3] px-5 pt-2">{tabs.map(([value, label]) => <button key={value} onClick={() => setTab(value)} className={`whitespace-nowrap border-b-2 px-2 pb-2.5 text-[11px] font-semibold transition-colors ${tab === value ? 'border-[#151412] text-[#151412]' : 'border-transparent text-[#9a958d] hover:text-[#4d4942]'}`}>{label}</button>)}</div>
     <div className="max-h-[calc(92vh-138px)] overflow-y-auto px-5 py-5">
       {tab === 'overview' && <div className="grid grid-cols-1 gap-4 md:grid-cols-2"><div className="rounded-[11px] border border-[#e9e6e1] bg-white p-4"><p className="mb-3 text-[12px] font-semibold text-[#35322e]">Identity</p><Detail label="Contact type" value={contactTypeLabel(contact.contact_type)} /><Detail label="Status" value={contactStatusLabel(contact.status)} /><Detail label="Customer ID" value={contact.customer_id ?? 'Pending'} /><Detail label="Company" value={contact.company_name ?? contact.business_name} /></div><div className="rounded-[11px] border border-[#e9e6e1] bg-white p-4"><p className="mb-3 text-[12px] font-semibold text-[#35322e]">Communication</p><Detail label="Email" value={contact.email} /><Detail label="Phone" value={contact.phone} /><Detail label="Alternate phone" value={contact.alternate_phone} /><Detail label="Preferred channel" value={channelLabel(contact.preferred_channel)} /></div><div className="rounded-[11px] border border-[#e9e6e1] bg-white p-4 md:col-span-2"><p className="mb-3 text-[12px] font-semibold text-[#35322e]">Address and context</p><Detail label="Address" value={[contact.address, contact.city, contact.state, contact.zip_code, contact.country].filter(Boolean).join(', ')} /><Detail label="AI summary" value={contact.ai_summary} /><Detail label="Internal notes" value={contact.internal_notes ?? contact.notes} /></div></div>}
-      {tab === 'relationships' && <RelationshipPanel contact={contact} relationships={relationships} properties={properties} units={units} onAdd={onAddRelationship} onRemove={onRemoveRelationship} />}
+       {tab === 'relationships' && <RelationshipPanel contact={contact} relationships={relationships} relationshipHistory={relationshipHistory} properties={properties} units={units} onAdd={onAddRelationship} onRemove={onRemoveRelationship} />}
        {tab === 'services' && <ContactServices contact={contact} serviceRelationships={serviceRelationships} services={services} />}
        {tab === 'issues' && <div>
          {issuesLoading && <div className="flex items-center justify-center py-10 text-[11px] text-[#8e8981]"><Loader2 size={14} className="mr-2 animate-spin" />Loading requests…</div>}
@@ -592,6 +599,7 @@ export default function ContactsPage() {
   useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [relationships, setRelationships] = useState<ContactPropertyRelationship[]>([]);
+  const [relationshipHistory, setRelationshipHistory] = useState<ContactPropertyRelationshipHistory[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [serviceRelationships, setServiceRelationships] = useState<ServiceContactRelationship[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -618,9 +626,10 @@ export default function ContactsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [contactsResult, relationshipsResult, propertiesResult, unitsResult, servicesResult, serviceRelationshipsResult] = await Promise.all([
+    const [contactsResult, relationshipsResult, historyResult, propertiesResult, unitsResult, servicesResult, serviceRelationshipsResult] = await Promise.all([
       supabase.from('contacts').select('*').order('name'),
       supabase.from('contact_property_relationships').select('id, company_id, contact_id, property_id, unit_id, relationship_type, start_date, end_date, notes, ownership_percentage, ownership_scope, property:properties(id, name, address_line1, city), unit:units(id, unit_number, property_id)'),
+      supabase.from('contact_property_relationship_history').select('*').order('archived_at', { ascending: false }),
       supabase.from('properties').select('*').order('name'),
       supabase.from('units').select('*').order('unit_number'),
       supabase.from('services').select('*').order('name'),
@@ -635,6 +644,7 @@ export default function ContactsPage() {
       setRelationshipError(null);
       setRelationships((relationshipsResult.data as unknown as ContactPropertyRelationship[]) ?? []);
     }
+    setRelationshipHistory(historyResult.error ? [] : (historyResult.data as ContactPropertyRelationshipHistory[]) ?? []);
     if (!propertiesResult.error) setProperties((propertiesResult.data as Property[]) ?? []);
     if (!unitsResult.error) setUnits((unitsResult.data as Unit[]) ?? []);
     if (servicesResult.error) {
@@ -755,8 +765,8 @@ export default function ContactsPage() {
        {!loading && !error && filtered.length > 0 && <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"><AnimatePresence mode="popLayout">{filtered.map((contact) => <ContactCard key={contact.id} contact={contact} relationships={relationships} properties={properties} serviceRelationships={serviceRelationships} services={services} onOpen={() => setProfileContact(contact)} onEdit={() => setFormContact(contact)} onDelete={() => setDeleteContact(contact)} onNotes={() => setNotesContact(contact)} />)}</AnimatePresence></div>}
     </div></div>
     <AnimatePresence>{formContact !== undefined && <ContactForm contact={formContact} onSave={saveContact} onClose={() => setFormContact(undefined)} />}</AnimatePresence>
-     <AnimatePresence>{profileContact && <ContactProfile contact={profileContact} relationships={relationships} properties={properties} units={units} serviceRelationships={serviceRelationships} services={services} onClose={() => setProfileContact(null)} onEdit={() => setFormContact(profileContact)} onAddRelationship={addRelationship} onRemoveRelationship={removeRelationship} onSaveNotes={(notes) => saveNotes(profileContact, notes)} />}</AnimatePresence>
-     <AnimatePresence>{notesContact && <ContactProfile contact={notesContact} relationships={relationships} properties={properties} units={units} serviceRelationships={serviceRelationships} services={services} onClose={() => setNotesContact(null)} onEdit={() => setFormContact(notesContact)} onAddRelationship={addRelationship} onRemoveRelationship={removeRelationship} onSaveNotes={(notes) => saveNotes(notesContact, notes)} />}</AnimatePresence>
+     <AnimatePresence>{profileContact && <ContactProfile contact={profileContact} relationships={relationships} relationshipHistory={relationshipHistory} properties={properties} units={units} serviceRelationships={serviceRelationships} services={services} onClose={() => setProfileContact(null)} onEdit={() => setFormContact(profileContact)} onAddRelationship={addRelationship} onRemoveRelationship={removeRelationship} onSaveNotes={(notes) => saveNotes(profileContact, notes)} />}</AnimatePresence>
+     <AnimatePresence>{notesContact && <ContactProfile contact={notesContact} relationships={relationships} relationshipHistory={relationshipHistory} properties={properties} units={units} serviceRelationships={serviceRelationships} services={services} onClose={() => setNotesContact(null)} onEdit={() => setFormContact(notesContact)} onAddRelationship={addRelationship} onRemoveRelationship={removeRelationship} onSaveNotes={(notes) => saveNotes(notesContact, notes)} />}</AnimatePresence>
     <AnimatePresence>{deleteContact && <ConfirmDelete name={deleteContact.name} deleting={deleting} onCancel={() => setDeleteContact(null)} onConfirm={deleteSelectedContact} />}</AnimatePresence>
   </div></AppLayout>;
 }

@@ -12,7 +12,6 @@ import {
   Bot,
   Zap,
   Building2,
-  DoorOpen,
   BriefcaseBusiness,
   ClipboardList,
 } from 'lucide-react';
@@ -47,7 +46,6 @@ const NAV_ITEMS = [
   { icon: Users2,          label: 'Contacts',          path: '/contacts' },
   { icon: UserRoundCog,    label: 'Team / Staff',       path: '/team' },
   { icon: Building2,       label: 'Properties',        path: '/properties' },
-  { icon: DoorOpen,        label: 'Units',             path: '/units' },
   { icon: BriefcaseBusiness, label: 'Services',       path: '/services' },
   { icon: ClipboardList,  label: 'Requests / Issues', path: '/requests' },
   { icon: ScrollText,      label: 'Business Policies', path: '/business-policies' },

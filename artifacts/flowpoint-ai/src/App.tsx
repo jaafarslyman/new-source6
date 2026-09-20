@@ -12,7 +12,6 @@ import BusinessPoliciesPage from '@/pages/business-policies';
 import AgentPage from '@/pages/agent';
 import PropertiesPage from '@/pages/properties';
 import PropertyDetailPage from '@/pages/property-detail';
-import UnitsPage from '@/pages/units';
 import ServicesPage from '@/pages/services';
 import RequestsPage from '@/pages/requests';
 import { SettingsProvider } from '@/contexts/SettingsContext';
@@ -33,7 +32,7 @@ function Router() {
       <Route path="/agent" component={AgentPage} />
       <Route path="/properties" component={PropertiesPage} />
       <Route path="/properties/:id" component={PropertyDetailPage} />
-      <Route path="/units" component={UnitsPage} />
+      <Route path="/units" component={PropertiesPage} />
       <Route path="/services" component={ServicesPage} />
       <Route path="/requests" component={RequestsPage} />
       <Route component={NotFound} />
