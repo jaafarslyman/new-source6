@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Check,
   Clock3,
-  Filter,
   Home,
   Loader2,
   Mail,
@@ -28,6 +27,7 @@ import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
 import FlowPointSelect from '@/components/FlowPointSelect';
 import NotificationBell from '@/components/NotificationBell';
+import PageFilterMenu from '@/components/PageFilterMenu';
 import { supabase } from '@/lib/supabase';
 import type { InboxEmail } from '@/lib/inboxTypes';
 import type { Property } from '@/lib/propertiesTypes';
@@ -85,6 +85,30 @@ function Avatar({ name, size = 42 }: { name: string; size?: number }) {
       {initials(name)}
     </div>
   );
+}
+
+function contactRelationshipSummaries(
+  contact: Contact,
+  relationships: ContactPropertyRelationship[],
+  properties: Property[],
+  units: Unit[],
+) {
+  const groups = new Map<string, { property?: Property; unitNumbers: Set<string>; scopes: Set<string>; types: Set<string> }>();
+  relationships.filter((item) => item.contact_id === contact.id).forEach((relationship) => {
+    const key = relationship.property_id;
+    const group = groups.get(key) ?? {
+      property: properties.find((property) => property.id === relationship.property_id),
+      unitNumbers: new Set<string>(),
+      scopes: new Set<string>(),
+      types: new Set<string>(),
+    };
+    const unit = relationship.unit ?? units.find((item) => item.id === relationship.unit_id);
+    if (unit?.unit_number) group.unitNumbers.add(unit.unit_number);
+    if (relationship.ownership_scope) group.scopes.add(relationship.ownership_scope);
+    group.types.add(relationship.relationship_type);
+    groups.set(key, group);
+  });
+  return [...groups.values()];
 }
 
 function Modal({
@@ -345,6 +369,7 @@ function ContactCard({
   contact,
   relationships,
   properties,
+  units,
   serviceRelationships,
   services,
   onOpen,
@@ -355,6 +380,7 @@ function ContactCard({
   contact: Contact;
   relationships: ContactPropertyRelationship[];
   properties: Property[];
+  units: Unit[];
   serviceRelationships: ServiceContactRelationship[];
   services: Service[];
   onOpen: () => void;
@@ -364,6 +390,7 @@ function ContactCard({
 }) {
   const linked = relationships.filter((item) => item.contact_id === contact.id);
   const ownerRelationships = linked.filter((item) => item.relationship_type === 'owner');
+  const relationshipSummaries = contactRelationshipSummaries(contact, relationships, properties, units);
   const linkedServices = serviceRelationships.filter((item) => String(item.contact_id) === String(contact.id));
   return (
     <motion.button
@@ -391,11 +418,8 @@ function ContactCard({
           </div>
           {contact.company_name || contact.business_name ? <p className="mt-2 flex items-center gap-1 truncate text-[11px] text-[#8e8981]"><Building2 size={11} />{contact.company_name ?? contact.business_name}</p> : null}
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {linked.slice(0, 2).map((relationship) => {
-              const property = relationship.property ?? properties.find((item) => item.id === relationship.property_id);
-              return <span key={String(relationship.id)} className="flex items-center gap-1 rounded-full border border-[#e9e6e1] bg-[#faf9f7] px-2 py-1 text-[10px] text-[#706b62]"><Home size={10} />{property?.name ?? 'Property'}{relationship.unit?.unit_number ? ` · ${relationship.unit.unit_number}` : ''}</span>;
-            })}
-            {linked.length > 2 && <span className="rounded-full border border-[#e9e6e1] bg-[#faf9f7] px-2 py-1 text-[10px] text-[#706b62]">+{linked.length - 2} more</span>}
+             {relationshipSummaries.slice(0, 2).map((summary, index) => <span key={`${summary.property?.id ?? 'property'}-${index}`} className="flex items-center gap-1 rounded-full border border-[#e9e6e1] bg-[#faf9f7] px-2 py-1 text-[10px] text-[#706b62]"><Home size={10} /><span className="truncate">{summary.property?.name ?? 'Property'}{summary.unitNumbers.size ? ` · Units ${[...summary.unitNumbers].join(', ')}` : summary.scopes.size ? ` · ${[...summary.scopes][0]}` : ''}</span></span>)}
+             {relationshipSummaries.length > 2 && <span className="rounded-full border border-[#e9e6e1] bg-[#faf9f7] px-2 py-1 text-[10px] text-[#706b62]">+{relationshipSummaries.length - 2} more</span>}
             {linked.length === 0 && <span className="text-[10px] italic text-[#aaa59d]">No property relationship</span>}
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-[#f0eeeb] pt-3 text-[10px] text-[#aaa59d]">
@@ -755,14 +779,25 @@ export default function ContactsPage() {
     <div className="min-h-0 flex-1 overflow-y-auto"><div className="mx-auto max-w-[1440px] px-5 py-6 sm:px-8 sm:py-8">
       {feedback && <div className={`mb-5 flex items-center justify-between rounded-[10px] border px-3 py-2.5 text-[12px] ${feedback.tone === 'success' ? 'border-[#d2ead7] bg-[#f2faf3] text-[#327443]' : 'border-[#f0c8c3] bg-[#fff7f6] text-[#a33a30]'}`}><span className="flex items-center gap-2">{feedback.tone === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}{feedback.message}</span><button onClick={() => setFeedback(null)}><X size={14} /></button></div>}
        {(relationshipError || serviceError) && <div className="mb-5 flex items-start gap-2 rounded-[10px] border border-[#f1dfb8] bg-[#fffaf0] px-3 py-2.5 text-[11px] text-[#8d671b]"><AlertCircle size={13} className="mt-0.5 flex-shrink-0" /><span>Some relationship data needs the supplied Supabase migration before it can be loaded. {relationshipError ?? serviceError}</span></div>}
-      <div className="rounded-[13px] border border-[#e9e6e1] bg-white p-4">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center"><label className="relative block min-w-[250px] flex-1"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a8a39b]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, phone, customer ID, company, property, or unit" className={`${inputClass} pl-9`} /></label><button onClick={clearFilters} className="flex h-[39px] items-center justify-center gap-2 rounded-[9px] border border-[#e4e2de] px-3 text-[12px] font-medium text-[#625e57] hover:bg-[#f4f2ef]"><Filter size={13} />Clear filters</button><button onClick={loadData} disabled={loading} className="flex h-[39px] items-center justify-center rounded-[9px] border border-[#e4e2de] px-3 text-[#817d76] hover:bg-[#f4f2ef] disabled:opacity-50"><RefreshCw size={14} className={loading ? 'animate-spin' : ''} /></button></div>
-         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7"><FlowPointSelect value={typeFilter} onChange={setTypeFilter} placeholder="All contact types" options={CONTACT_TYPES.map((item) => ({ ...item }))} /><FlowPointSelect value={statusFilter} onChange={setStatusFilter} placeholder="All statuses" options={CONTACT_STATUSES.map((item) => ({ ...item }))} /><FlowPointSelect value={propertyFilter} onChange={setPropertyFilter} placeholder="All properties" options={properties.map((property) => ({ value: property.id, label: property.name }))} /><FlowPointSelect value={unitFilter} onChange={setUnitFilter} placeholder="All units" options={units.map((unit) => ({ value: unit.id, label: unit.unit_number, secondary: properties.find((property) => property.id === unit.property_id)?.name }))} /><FlowPointSelect value={serviceFilter} onChange={setServiceFilter} placeholder="All services" options={[{ value: 'none', label: 'No services linked' }, ...services.map((service) => ({ value: service.id, label: service.name, secondary: service.category }))]} /><FlowPointSelect value={lastContactFilter} onChange={setLastContactFilter} placeholder="Last communication" options={[{ value: '7', label: 'Last 7 days' }, { value: '30', label: 'Last 30 days' }, { value: 'older', label: 'Older than 30 days' }, { value: 'never', label: 'Never contacted' }]} /><FlowPointSelect value={issuesFilter} onChange={setIssuesFilter} placeholder="Open issues" options={[{ value: 'none', label: 'No open issues' }]} /></div>
-      </div>
+       <div className="rounded-[13px] border border-[#e9e6e1] bg-white p-3.5">
+         <div className="flex items-center gap-2">
+           <label className="relative min-w-0 flex-1"><Search size={12} className="pointer-events-none absolute left-[10px] top-1/2 -translate-y-1/2 text-[#aaa59d]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, company, property, or unit" className="h-[30px] w-full rounded-[8px] border border-[#e5e2dd] bg-[#faf9f7] pl-7 pr-7 text-[12px] text-[#151412] outline-none placeholder:text-[#b3b0aa] focus:border-[#cfcac2] focus:bg-white" />{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-[#aaa59d] hover:text-[#151412]"><X size={11} /></button>}</label>
+           <PageFilterMenu testId="button-contact-filters" activeCount={[typeFilter, statusFilter, propertyFilter, unitFilter, serviceFilter, lastContactFilter, issuesFilter].filter(Boolean).length} onReset={() => { setTypeFilter(''); setStatusFilter(''); setPropertyFilter(''); setUnitFilter(''); setServiceFilter(''); setLastContactFilter(''); setIssuesFilter(''); }}>
+             <FlowPointSelect value={typeFilter} onChange={setTypeFilter} placeholder="All contact types" options={CONTACT_TYPES.map((item) => ({ ...item }))} />
+             <FlowPointSelect value={statusFilter} onChange={setStatusFilter} placeholder="All statuses" options={CONTACT_STATUSES.map((item) => ({ ...item }))} />
+             <FlowPointSelect value={propertyFilter} onChange={setPropertyFilter} placeholder="All properties" options={properties.map((property) => ({ value: property.id, label: property.name }))} />
+             <FlowPointSelect value={unitFilter} onChange={setUnitFilter} placeholder="All units" options={units.map((unit) => ({ value: unit.id, label: unit.unit_number, secondary: properties.find((property) => property.id === unit.property_id)?.name }))} />
+             <FlowPointSelect value={serviceFilter} onChange={setServiceFilter} placeholder="All services" options={[{ value: 'none', label: 'No services linked' }, ...services.map((service) => ({ value: service.id, label: service.name, secondary: service.category }))]} />
+             <FlowPointSelect value={lastContactFilter} onChange={setLastContactFilter} placeholder="Last communication" options={[{ value: '7', label: 'Last 7 days' }, { value: '30', label: 'Last 30 days' }, { value: 'older', label: 'Older than 30 days' }, { value: 'never', label: 'Never contacted' }]} />
+             <FlowPointSelect value={issuesFilter} onChange={setIssuesFilter} placeholder="Open issues" options={[{ value: 'none', label: 'No open issues' }]} />
+           </PageFilterMenu>
+           <button type="button" onClick={loadData} disabled={loading} aria-label="Refresh contacts" className="flex h-[30px] w-[30px] items-center justify-center rounded-full border border-[#e5e2dd] bg-[#faf9f7] text-[#89847c] hover:border-[#cfcac2] hover:text-[#151412] disabled:opacity-50"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
+         </div>
+       </div>
       {loading && <LoadingState />}
       {!loading && error && <div className="mt-5"><InlineError message={error} /></div>}
-      {!loading && !error && filtered.length === 0 && <div className="mt-5"><EmptyState icon={Users2} title={search || typeFilter || statusFilter ? 'No matching contacts' : 'No contacts yet'} description={search || typeFilter || statusFilter ? 'Try a different search or clear one of the filters.' : 'Add the first contact to give your team a shared identity and relationship record.'} /></div>}
-       {!loading && !error && filtered.length > 0 && <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"><AnimatePresence mode="popLayout">{filtered.map((contact) => <ContactCard key={contact.id} contact={contact} relationships={relationships} properties={properties} serviceRelationships={serviceRelationships} services={services} onOpen={() => setProfileContact(contact)} onEdit={() => setFormContact(contact)} onDelete={() => setDeleteContact(contact)} onNotes={() => setNotesContact(contact)} />)}</AnimatePresence></div>}
+       {!loading && !error && filtered.length === 0 && <div className="mt-5"><EmptyState icon={Users2} title={search || typeFilter || statusFilter || propertyFilter || unitFilter || serviceFilter || lastContactFilter || issuesFilter ? 'No matching contacts' : 'No contacts yet'} description={search || typeFilter || statusFilter || propertyFilter || unitFilter || serviceFilter || lastContactFilter || issuesFilter ? 'Try a different search or reset the filters.' : 'Add the first contact to give your team a shared identity and relationship record.'} /></div>}
+        {!loading && !error && filtered.length > 0 && <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"><AnimatePresence mode="popLayout">{filtered.map((contact) => <ContactCard key={contact.id} contact={contact} relationships={relationships} properties={properties} units={units} serviceRelationships={serviceRelationships} services={services} onOpen={() => setProfileContact(contact)} onEdit={() => setFormContact(contact)} onDelete={() => setDeleteContact(contact)} onNotes={() => setNotesContact(contact)} />)}</AnimatePresence></div>}
     </div></div>
     <AnimatePresence>{formContact !== undefined && <ContactForm contact={formContact} onSave={saveContact} onClose={() => setFormContact(undefined)} />}</AnimatePresence>
      <AnimatePresence>{profileContact && <ContactProfile contact={profileContact} relationships={relationships} relationshipHistory={relationshipHistory} properties={properties} units={units} serviceRelationships={serviceRelationships} services={services} onClose={() => setProfileContact(null)} onEdit={() => setFormContact(profileContact)} onAddRelationship={addRelationship} onRemoveRelationship={removeRelationship} onSaveNotes={(notes) => saveNotes(profileContact, notes)} />}</AnimatePresence>
